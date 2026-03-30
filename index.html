@@ -347,10 +347,10 @@
       <div class="txn-head">Recent transactions</div>
       <div id="u-txn-body"><div class="txn-empty">No transactions yet</div></div>
     </div>
+    <!-- Shown only to vendor accounts in preview mode -->
+    <button class="link-btn" id="switch-to-vendor-btn" style="display:none" onclick="togglePreviewMode()">← Switch to vendor view</button>
     <button class="link-btn" onclick="doSignOut()">Sign out</button>
   </div>
-
-  <!-- SCREEN: Vendor home -->
   <div class="screen" id="s-vendor">
     <div class="vendor-hero">
       <div class="vendor-hero-label">Vendor mode</div>
@@ -364,6 +364,7 @@
       <div class="scan-btn-sub">Tap to open camera</div>
     </button>
     <div class="status err" id="vendor-status"></div>
+    <button class="link-btn" onclick="togglePreviewMode()">Switch to customer view</button>
     <button class="link-btn" onclick="doSignOut()">Sign out</button>
   </div>
 
@@ -427,7 +428,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import QRCode from "https://esm.sh/qrcode@1.5.3";
 
 // ── PASTE YOUR FIREBASE CONFIG HERE ────────────────────────────────────────
@@ -442,8 +443,12 @@ const firebaseConfig = {
 };
 // ───────────────────────────────────────────────────────────────────────────
 
-// ── VENDOR PHONE — update if number changes ────────────────────────────────
-const VENDOR_PHONES = ['+6591396391', '+6591127986', '+6597866578'];
+// ── Vendor phones — add or remove numbers here as needed ───────────────────
+const VENDOR_PHONES = [
+  '+6591396391',  // Vendor 1
+  '+6591127986',  // Vendor 2
+  '+6597866578',  // Vendor 3
+];
 // ───────────────────────────────────────────────────────────────────────────
 
 const app = initializeApp(firebaseConfig);
@@ -480,7 +485,9 @@ function clearOTP() { [0,1,2,3,4,5].forEach(i => { $('o'+i).value = ''; }); $('o
   $('o'+i).addEventListener('keydown', e => { if (e.key === 'Backspace' && !e.target.value && i > 0) $('o'+(i-1)).focus(); });
 });
 
-let vendorAction = 'topup';
+let vendorAction   = 'topup';
+let vendorPreview  = false;   // true = vendor is previewing customer interface
+let currentUser    = null;    // cached after login
 window.selectAction = type => {
   vendorAction = type;
   $('opt-topup').className  = 'action-opt' + (type === 'topup'  ? ' sel-topup'  : '');
@@ -498,37 +505,62 @@ let scanInterval = null;
 // ── Auth state → route to correct interface ──
 onAuthStateChanged(auth, async user => {
   if (!user) { show('s-phone'); return; }
+  currentUser = user;
 
   if (VENDOR_PHONES.includes(user.phoneNumber)) {
-    // ── Vendor ──
-    $('role-badge').textContent = 'Vendor';
-    $('role-badge').className   = 'role-badge vendor';
-    $('logo').classList.add('vendor-mode');
-    show('s-vendor');
-
-  } else {
-    // ── Customer — create Firestore doc on first login ──
-    const ref  = doc(db, 'users', user.uid);
-    let   snap = await getDoc(ref);
-    if (!snap.exists()) {
-      await setDoc(ref, {
-        phone:        user.phoneNumber,
-        balanceCents: 0,
-        createdAt:    serverTimestamp()
-      });
-      snap = await getDoc(ref);
+    if (vendorPreview) {
+      await renderUserDash(user);
+    } else {
+      showVendorUI();
     }
-    await renderUserDash(user, snap.data());
+  } else {
+    await renderUserDash(user);
   }
 });
 
+// ── Vendor UI ──
+function showVendorUI() {
+  $('role-badge').textContent = 'Vendor';
+  $('role-badge').className   = 'role-badge vendor';
+  $('logo').classList.add('vendor-mode');
+  setStatus('vendor-status', '');
+  show('s-vendor');
+}
+
+// ── Toggle between vendor and customer views (vendor accounts only) ──
+window.togglePreviewMode = async () => {
+  vendorPreview = !vendorPreview;
+  if (vendorPreview) {
+    await renderUserDash(currentUser);
+  } else {
+    showVendorUI();
+  }
+};
+
 // ── Customer dashboard ──
-async function renderUserDash(user, data) {
-  const raw = data.phone.replace('+65', '');
+async function renderUserDash(user) {
+  const ref  = doc(db, 'users', user.uid);
+  let   snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      phone:        user.phoneNumber,
+      balanceCents: 0,
+      createdAt:    serverTimestamp()
+    });
+    snap = await getDoc(ref);
+  }
+  const data = snap.data();
+  const raw  = data.phone.replace('+65', '');
+
   $('role-badge').textContent = 'Customer';
   $('role-badge').className   = 'role-badge user';
+  $('logo').classList.remove('vendor-mode');
   $('u-phone').textContent    = fmtPh(raw);
   $('u-balance').textContent  = fmt(data.balanceCents || 0);
+
+  // Show "Switch to vendor view" only for vendor accounts in preview mode
+  $('switch-to-vendor-btn').style.display =
+    VENDOR_PHONES.includes(user.phoneNumber) ? 'block' : 'none';
 
   // QR code — encodes Firebase UID (no personal data)
   const wrap = $('user-qr');
@@ -631,6 +663,16 @@ async function loadCustomer(uid) {
   }
 }
 
+// ── Prune transactions to max 10 per user ──
+async function pruneTransactions(uid) {
+  const q     = query(collection(db, 'users', uid, 'transactions'), orderBy('createdAt', 'asc'));
+  const snaps = await getDocs(q);
+  if (snaps.size > 10) {
+    const excess = snaps.docs.slice(0, snaps.size - 10);
+    await Promise.all(excess.map(d => deleteDoc(d.ref)));
+  }
+}
+
 // ── Vendor: execute transaction ──
 window.executeVendorTxn = async () => {
   const amtCents = cents($('vt-amount').value);
@@ -641,36 +683,54 @@ window.executeVendorTxn = async () => {
   setStatus('vt-status', '');
 
   try {
-    const ref  = doc(db, 'users', scannedUID);
-    const snap = await getDoc(ref);
-    const data = snap.data();
+    const ref    = doc(db, 'users', scannedUID);
+    const snap   = await getDoc(ref);
+    const data   = snap.data();
+    const curBal = data.balanceCents || 0;
     let newBal;
 
     if (vendorAction === 'topup') {
-      newBal = (data.balanceCents || 0) + amtCents;
+      // Top-up: add full amount
+      newBal = curBal + amtCents;
+      await updateDoc(ref, { balanceCents: newBal });
+      await addDoc(collection(db, 'users', scannedUID, 'transactions'), {
+        type:              'topup',
+        amountCents:       amtCents,
+        balanceAfterCents: newBal,
+        createdAt:         serverTimestamp()
+      });
+      await pruneTransactions(scannedUID);
+
+      $('suc-pip').className      = 'success-pip topup';
+      $('suc-pip').textContent    = '↑';
+      $('suc-title').textContent  = 'Top-up done';
+      $('suc-detail').textContent = `+$${fmt(amtCents)}\n${$('vt-phone').textContent}`;
+      $('suc-bal').textContent    = `New balance: $${fmt(newBal)}`;
+
     } else {
-      if ((data.balanceCents || 0) < amtCents) {
-        setStatus('vt-status', `Insufficient balance. Current: $${fmt(data.balanceCents || 0)}`, 'err');
-        setLoading('vt-btn-txt', 'vt-spin', 'vt-btn', false);
-        return;
-      }
-      newBal = data.balanceCents - amtCents;
+      // Deduct: use available credits first, remainder is cash
+      const creditDeducted = Math.min(amtCents, curBal);
+      const cashOwed       = amtCents - creditDeducted;
+      newBal               = curBal - creditDeducted;
+
+      await updateDoc(ref, { balanceCents: newBal });
+      await addDoc(collection(db, 'users', scannedUID, 'transactions'), {
+        type:              'deduct',
+        amountCents:       creditDeducted,
+        balanceAfterCents: newBal,
+        createdAt:         serverTimestamp()
+      });
+      await pruneTransactions(scannedUID);
+
+      $('suc-pip').className      = 'success-pip deduct';
+      $('suc-pip').textContent    = '↓';
+      $('suc-title').textContent  = cashOwed > 0 ? 'Partial deduction' : 'Deduction done';
+      $('suc-detail').textContent = cashOwed > 0
+        ? `$${fmt(creditDeducted)} credits deducted\nCollect $${fmt(cashOwed)} cash`
+        : `-$${fmt(creditDeducted)}\n${$('vt-phone').textContent}`;
+      $('suc-bal').textContent    = `New balance: $${fmt(newBal)}`;
     }
 
-    await updateDoc(ref, { balanceCents: newBal });
-    await addDoc(collection(db, 'users', scannedUID, 'transactions'), {
-      type:               vendorAction,
-      amountCents:        amtCents,
-      balanceAfterCents:  newBal,
-      createdAt:          serverTimestamp()
-    });
-
-    const isTop = vendorAction === 'topup';
-    $('suc-pip').className      = 'success-pip ' + vendorAction;
-    $('suc-pip').textContent    = isTop ? '↑' : '↓';
-    $('suc-title').textContent  = isTop ? 'Top-up done' : 'Deduction done';
-    $('suc-detail').textContent = `${isTop ? '+' : '-'}$${fmt(amtCents)}\n${$('vt-phone').textContent}`;
-    $('suc-bal').textContent    = `New balance: $${fmt(newBal)}`;
     scannedUID = null;
     show('s-success');
 
@@ -720,6 +780,8 @@ window.verifyOTP = async () => {
 };
 
 window.doSignOut = async () => {
+  vendorPreview = false;
+  currentUser   = null;
   await signOut(auth);
   $('role-badge').className = 'role-badge';
   $('logo').classList.remove('vendor-mode');
