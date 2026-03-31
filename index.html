@@ -561,6 +561,8 @@ onAuthStateChanged(auth, async user => {
   if (VENDOR_PHONES.includes(user.phoneNumber)) {
     showVendorUI();
   } else {
+    // Explicitly set isVendor false so Firestore rules never see a missing field
+    updateDoc(doc(db, 'users', user.uid), { isVendor: false }).catch(() => {});
     await renderUserDash(user);
   }
 });
