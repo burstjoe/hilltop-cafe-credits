@@ -709,19 +709,16 @@ window.openCamera = async () => {
     // Prefer rear camera
     const device = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
     const deviceId = device ? device.deviceId : undefined;
+    let scanHandled = false;  // guard against repeated callbacks
     zxingReader.decodeFromVideoDevice(deviceId, 'cam-video', (result, err) => {
-      if (result) {
+      if (result && !scanHandled) {
+        scanHandled = true;  // block any further callbacks immediately
         const uid = result.getText();
-        // Defer all cleanup and navigation out of ZXing callback context
-        // so reset() doesn't kill the execution mid-flight
         setTimeout(async () => {
-          // Stop scanner
           if (zxingReader) { try { zxingReader.reset(); } catch(_){} zxingReader = null; }
-          // Close overlay and stop video
           $('cam-overlay').classList.remove('active');
           const video = $('cam-video');
           if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
-          // Navigate to top-up screen
           await loadCustomer(uid);
         }, 0);
       }
