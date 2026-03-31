@@ -411,28 +411,14 @@
       <div class="scan-btn-label">Scan customer QR</div>
       <div class="scan-btn-sub">Tap to open camera</div>
     </button>
-    <button class="scan-btn" onclick="showDebtList()" style="border-color:var(--accent);margin-top:0">
-      <div class="scan-icon" style="background:var(--accent-bg)">
-        <svg viewBox="0 0 24 24" style="stroke:var(--accent)"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      </div>
-      <div class="scan-btn-label" style="color:var(--accent)">Negative balances</div>
-      <div class="scan-btn-sub">View accounts in debt</div>
-    </button>
     <div class="status err" id="vendor-status"></div>
-    <button class="link-btn" onclick="togglePreviewMode()">Switch to customer view</button>
-    <button class="link-btn" onclick="doSignOut()">Sign out</button>
-  </div>
-
-  <!-- SCREEN: Negative balance list -->
-  <div class="screen" id="s-debt">
-    <div class="vendor-hero" style="background:var(--accent)">
-      <div class="vendor-hero-label">Accounts in debt</div>
-      <div class="vendor-hero-title">Negative balances</div>
-    </div>
+    <!-- Negative balances — always visible inline -->
+    <div style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);padding:4px 4px 0">Negative balances</div>
     <div class="card debt-list" id="debt-list-body">
       <div class="debt-empty">Loading...</div>
     </div>
-    <button class="link-btn" onclick="show('s-vendor')">← Back</button>
+    <button class="link-btn" onclick="togglePreviewMode()">Switch to customer view</button>
+    <button class="link-btn" onclick="doSignOut()">Sign out</button>
   </div>
 
   <!-- SCREEN: Debt reset -->
@@ -449,7 +435,7 @@
         <span id="reset-btn-txt">Reset balance to $0.00</span>
         <div class="spin" id="reset-spin"></div>
       </button>
-      <button class="link-btn" onclick="show('s-debt')">← Back to list</button>
+      <button class="link-btn" onclick="show('s-vendor')">← Back to list</button>
     </div>
   </div>
 
@@ -507,6 +493,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import QRCode from "https://esm.sh/qrcode@1.5.3";
+import { BrowserQRCodeReader } from "https://esm.sh/@zxing/browser@0.1.5";
 
 // ── PASTE YOUR FIREBASE CONFIG HERE ────────────────────────────────────────
 const firebaseConfig = {
@@ -567,8 +554,6 @@ let currentUser    = null;    // cached after login
 
 let confResult  = null;
 let scannedUID  = null;
-let camStream   = null;
-let scanInterval = null;
 
 // ── Auth state → route to correct interface ──
 onAuthStateChanged(auth, async user => {
@@ -593,6 +578,7 @@ function showVendorUI() {
   $('logo').classList.add('vendor-mode');
   setStatus('vendor-status', '');
   show('s-vendor');
+  loadDebtList();  // always refresh on vendor home load
 }
 
 // ── Toggle between vendor and customer views (vendor accounts only) ──
@@ -729,52 +715,37 @@ window.userDeduct = async () => {
   setLoading('user-deduct-btn-txt', 'user-deduct-spin', null, false);
 };
 
-// ── Camera / QR scan ──
+// ── Camera / QR scan (ZXing — works on Android and iOS) ──
+let zxingReader = null;
+
 window.openCamera = async () => {
   setStatus('vendor-status', '');
   $('cam-overlay').classList.add('active');
   try {
-    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    $('cam-video').srcObject = camStream;
-    await new Promise(r => { $('cam-video').onloadedmetadata = r; });
-    startScanLoop();
+    zxingReader = new BrowserQRCodeReader();
+    const devices = await BrowserQRCodeReader.listVideoInputDevices();
+    // Prefer rear camera
+    const device = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
+    const deviceId = device ? device.deviceId : undefined;
+    zxingReader.decodeFromVideoDevice(deviceId, 'cam-video', (result, err) => {
+      if (result) {
+        const uid = result.getText();
+        closeCamera();
+        loadCustomer(uid);
+      }
+    });
   } catch (e) {
     closeCamera();
     setStatus('vendor-status', 'Camera access denied. Please allow camera permission.', 'err');
   }
 };
 
-function startScanLoop() {
-  function beginScanning() {
-    const canvas = document.createElement('canvas');
-    const ctx    = canvas.getContext('2d');
-    scanInterval = setInterval(() => {
-      const video = $('cam-video');
-      if (!video.videoWidth) return;
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-      const img    = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const result = window.jsQR && window.jsQR(img.data, img.width, img.height);
-      if (result && result.data) {
-        clearInterval(scanInterval); scanInterval = null;
-        closeCamera();
-        loadCustomer(result.data);
-      }
-    }, 300);
-  }
-  // If jsQR already loaded from a previous scan, start immediately
-  if (window.jsQR) { beginScanning(); return; }
-  const s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
-  s.onload = beginScanning;
-  document.head.appendChild(s);
-}
-
 window.closeCamera = () => {
   $('cam-overlay').classList.remove('active');
-  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
-  if (camStream)    { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  if (zxingReader) { zxingReader.reset(); zxingReader = null; }
+  // Also stop any lingering video tracks
+  const video = $('cam-video');
+  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
 };
 
 async function loadCustomer(uid) {
@@ -845,9 +816,8 @@ window.executeVendorTxn = async () => {
   setLoading('vt-btn-txt', 'vt-spin', 'vt-btn', false);
 };
 
-// ── Vendor: negative balance list ──
-window.showDebtList = async () => {
-  show('s-debt');
+// ── Vendor: load negative balance list inline ──
+async function loadDebtList() {
   const body = $('debt-list-body');
   body.innerHTML = '<div class="debt-empty">Loading...</div>';
   try {
@@ -862,9 +832,7 @@ window.showDebtList = async () => {
       const data = d.data();
       const raw  = data.phone.replace('+65', '');
       return `<div class="debt-item" onclick="showReset('${d.id}', '${data.phone}', ${data.balanceCents})">
-        <div>
-          <div class="debt-phone">${fmtPh(raw)}</div>
-        </div>
+        <div><div class="debt-phone">${fmtPh(raw)}</div></div>
         <div style="display:flex;align-items:center">
           <div class="debt-amt">-$${fmt(Math.abs(data.balanceCents))}</div>
           <div class="debt-arrow">›</div>
@@ -874,7 +842,7 @@ window.showDebtList = async () => {
   } catch (e) {
     body.innerHTML = '<div class="debt-empty">Error loading list. Try again.</div>';
   }
-};
+}
 
 // ── Vendor: show reset screen for a specific user ──
 let resetUID = null;
@@ -909,7 +877,8 @@ window.executeReset = async () => {
       // Transaction record failed silently — balance reset still succeeded
     }
     resetUID = null;
-    await showDebtList();
+    show('s-vendor');
+    await loadDebtList();
   } catch (e) {
     setStatus('reset-status', e.message || 'Reset failed. Try again.', 'err');
     setLoading('reset-btn-txt', 'reset-spin', 'reset-btn', false);
