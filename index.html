@@ -709,17 +709,21 @@ window.openCamera = async () => {
     // Prefer rear camera
     const device = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
     const deviceId = device ? device.deviceId : undefined;
-    zxingReader.decodeFromVideoDevice(deviceId, 'cam-video', async (result, err) => {
+    zxingReader.decodeFromVideoDevice(deviceId, 'cam-video', (result, err) => {
       if (result) {
         const uid = result.getText();
-        // Stop scanner immediately to prevent duplicate reads
-        if (zxingReader) { zxingReader.reset(); zxingReader = null; }
-        // Close overlay
-        $('cam-overlay').classList.remove('active');
-        const video = $('cam-video');
-        if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
-        // Load customer after camera is cleanly closed
-        await loadCustomer(uid);
+        // Defer all cleanup and navigation out of ZXing callback context
+        // so reset() doesn't kill the execution mid-flight
+        setTimeout(async () => {
+          // Stop scanner
+          if (zxingReader) { try { zxingReader.reset(); } catch(_){} zxingReader = null; }
+          // Close overlay and stop video
+          $('cam-overlay').classList.remove('active');
+          const video = $('cam-video');
+          if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+          // Navigate to top-up screen
+          await loadCustomer(uid);
+        }, 0);
       }
     });
   } catch (e) {
