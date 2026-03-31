@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Hilltop ACE Credits</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=Instrument+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=Instrument+Sans:wght@300;400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #EFECE6;
@@ -22,6 +22,7 @@
     --vendor-light: #E8EDF2;
     --sans: 'Instrument Sans', sans-serif;
     --display: 'Syne', sans-serif;
+    --numeric: 'Inter', sans-serif;
     --r: 14px;
     --r-sm: 8px;
   }
@@ -104,7 +105,7 @@
   }
   .input-wrap:focus-within { border-color: var(--ink); }
   .input-pre {
-    font-family: var(--display);
+    font-family: var(--numeric);
     font-size: 13px;
     font-weight: 500;
     color: var(--ink2);
@@ -119,7 +120,7 @@
   }
   input[type=tel], input[type=number] {
     border: none; outline: none;
-    font-family: var(--display);
+    font-family: var(--numeric);
     font-size: 15px;
     font-weight: 500;
     color: var(--ink);
@@ -135,7 +136,7 @@
     flex: 0 0 44px; width: 44px; height: 54px;
     border: 1.5px solid var(--border);
     border-radius: var(--r-sm);
-    font-family: var(--display);
+    font-family: var(--numeric);
     font-size: 20px;
     font-weight: 700;
     text-align: center;
@@ -200,8 +201,8 @@
     pointer-events: none;
   }
   .bal-label { font-family: var(--display); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
-  .bal-phone { font-family: var(--display); font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 4px; }
-  .bal-amount { font-family: var(--display); font-size: 52px; font-weight: 700; color: #fff; margin-top: 20px; line-height: 1; letter-spacing: -0.02em; }
+  .bal-phone { font-family: var(--numeric); font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 4px; }
+  .bal-amount { font-family: var(--numeric); font-size: 52px; font-weight: 700; color: #fff; margin-top: 20px; line-height: 1; letter-spacing: -0.02em; }
   .bal-currency { font-size: 24px; font-weight: 400; opacity: 0.6; vertical-align: super; margin-right: 3px; }
   .qr-section { padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
   .qr-label { font-family: var(--display); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
@@ -214,12 +215,12 @@
   .txn-dot.deduct { background: var(--accent); }
   .txn-info { flex: 1; min-width: 0; }
   .txn-type { font-size: 13px; font-weight: 500; color: var(--ink); }
-  .txn-time { font-family: var(--display); font-size: 11px; color: var(--ink3); margin-top: 2px; }
-  .txn-amt { font-family: var(--display); font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .txn-time { font-family: var(--numeric); font-size: 11px; color: var(--ink3); margin-top: 2px; }
+  .txn-amt { font-family: var(--numeric); font-size: 14px; font-weight: 700; flex-shrink: 0; }
   .txn-amt.topup { color: var(--green); }
   .txn-amt.deduct { color: var(--accent); }
   .txn-empty { padding: 24px; text-align: center; font-size: 13px; color: var(--ink3); }
-  .bal-hidden { font-family: var(--display); font-size: 32px; font-weight: 700; color: rgba(255,255,255,0.25); margin-top: 20px; letter-spacing: 0.1em; }
+  .bal-hidden { font-family: var(--numeric); font-size: 32px; font-weight: 700; color: rgba(255,255,255,0.25); margin-top: 20px; letter-spacing: 0.1em; }
   .bal-toggle { font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.45); background: none; border: 1px solid rgba(255,255,255,0.2); border-radius: 100px; padding: 6px 14px; cursor: pointer; margin-top: 12px; transition: background 0.15s; }
   .bal-toggle:hover { background: rgba(255,255,255,0.08); }
   .bal-amount.negative { color: #F09595; }
@@ -227,14 +228,14 @@
   .debt-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
   .debt-item:last-child { border-bottom: none; }
   .debt-item:hover { background: var(--surface2); }
-  .debt-phone { font-family: var(--display); font-size: 14px; font-weight: 500; color: var(--ink); }
-  .debt-amt { font-family: var(--display); font-size: 14px; font-weight: 700; color: var(--accent); }
+  .debt-phone { font-family: var(--numeric); font-size: 14px; font-weight: 500; color: var(--ink); }
+  .debt-amt { font-family: var(--numeric); font-size: 14px; font-weight: 700; color: var(--accent); }
   .debt-empty { padding: 24px; text-align: center; font-size: 13px; color: var(--ink3); }
   .debt-arrow { font-size: 16px; color: var(--ink3); margin-left: 8px; }
   .reset-hero { background: var(--accent); border-radius: var(--r); padding: 28px 24px; display: flex; flex-direction: column; gap: 6px; }
   .reset-hero-label { font-family: var(--display); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
-  .reset-hero-phone { font-family: var(--display); font-size: 20px; font-weight: 700; color: #fff; }
-  .reset-hero-bal { font-family: var(--display); font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+  .reset-hero-phone { font-family: var(--numeric); font-size: 20px; font-weight: 700; color: #fff; }
+  .reset-hero-bal { font-family: var(--numeric); font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 4px; }
   .txn-dot.reset { background: var(--green); }
   .vendor-hero { background: var(--vendor); border-radius: var(--r); padding: 28px 24px; display: flex; flex-direction: column; gap: 6px; }
   .vendor-hero-label { font-family: var(--display); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
@@ -257,8 +258,8 @@
   .scan-icon svg { width: 24px; height: 24px; stroke: var(--vendor); fill: none; stroke-width: 2; stroke-linecap: round; }
   .scan-btn-label { font-family: var(--display); font-size: 15px; font-weight: 700; color: var(--vendor); }
   .scan-btn-sub { font-size: 12px; color: var(--ink3); }
-  .vtxn-phone { font-family: var(--display); font-size: 18px; font-weight: 700; color: var(--ink); padding: 16px 20px 0; }
-  .vtxn-bal { font-size: 13px; color: var(--ink2); padding: 4px 20px 16px; border-bottom: 1px solid var(--border); }
+  .vtxn-phone { font-family: var(--numeric); font-size: 18px; font-weight: 700; color: var(--ink); padding: 16px 20px 0; }
+  .vtxn-bal { font-size: 13px; font-family: var(--numeric); color: var(--ink2); padding: 4px 20px 16px; border-bottom: 1px solid var(--border); }
   .vtxn-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
   .action-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .action-opt { padding: 14px 12px; border-radius: var(--r-sm); border: 1.5px solid var(--border); background: var(--surface); cursor: pointer; text-align: center; transition: all 0.15s; }
@@ -273,7 +274,7 @@
   .success-pip.deduct { background: var(--accent-bg); color: var(--accent); }
   .success-title { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--ink); }
   .success-detail { font-size: 14px; color: var(--ink2); line-height: 1.6; white-space: pre-line; }
-  .success-pill { background: var(--surface2); border-radius: 100px; padding: 10px 20px; font-family: var(--display); font-size: 14px; font-weight: 700; color: var(--ink); }
+  .success-pill { background: var(--surface2); border-radius: 100px; padding: 10px 20px; font-family: var(--numeric); font-size: 14px; font-weight: 700; color: var(--ink); }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spin { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; flex-shrink: 0; }
   #cam-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 100; flex-direction: column; }
@@ -368,7 +369,7 @@
     <div class="card card-body" style="gap:12px;flex-direction:row;align-items:center;justify-content:space-between">
       <div>
         <div style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3)">Account</div>
-        <div style="font-family:var(--display);font-size:15px;font-weight:500;color:var(--ink);margin-top:4px" id="u-phone"></div>
+        <div style="font-family:var(--numeric);font-size:15px;font-weight:500;color:var(--ink);margin-top:4px" id="u-phone"></div>
       </div>
       <button class="btn btn-ghost" style="width:auto;padding:0 18px;height:40px;font-size:12px" onclick="show('s-balance')">View balance</button>
     </div>
@@ -393,8 +394,8 @@
   <div class="screen" id="s-balance">
     <div class="card card-body" style="gap:8px;align-items:center;padding:48px 24px">
       <div style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3)">Current balance</div>
-      <div style="font-family:var(--display);font-size:13px;color:var(--ink2);margin-bottom:8px" id="bal-screen-phone"></div>
-      <div style="font-family:var(--display);font-size:56px;font-weight:700;line-height:1;letter-spacing:-0.02em" id="bal-screen-amount">—</div>
+      <div style="font-family:var(--numeric);font-size:13px;color:var(--ink2);margin-bottom:8px" id="bal-screen-phone"></div>
+      <div style="font-family:var(--numeric);font-size:56px;font-weight:600;line-height:1;letter-spacing:-0.02em" id="bal-screen-amount">—</div>
       <div style="font-size:12px;color:var(--ink3);margin-top:8px" id="bal-screen-note"></div>
     </div>
     <button class="link-btn" onclick="show('s-user')">← Back</button>
@@ -749,10 +750,15 @@ window.closeCamera = () => {
 };
 
 async function loadCustomer(uid) {
+  // Validate the scanned value looks like a Firebase UID (28 alphanumeric chars)
+  if (!uid || uid.length < 20 || uid.includes(' ') || uid.startsWith('http')) {
+    setStatus('vendor-status', `Invalid QR — scanned: "${uid.slice(0,40)}"`, 'err');
+    return;
+  }
   try {
     const snap = await getDoc(doc(db, 'users', uid));
     if (!snap.exists()) {
-      setStatus('vendor-status', 'Customer account not found. They may need to log in first.', 'err');
+      setStatus('vendor-status', `No account found for this QR. Ask customer to log in first.`, 'err');
       return;
     }
     const data = snap.data();
@@ -763,7 +769,7 @@ async function loadCustomer(uid) {
     setStatus('vt-status', '');
     show('s-vtxn');
   } catch (e) {
-    setStatus('vendor-status', 'Error reading QR. Please try again.', 'err');
+    setStatus('vendor-status', `Error: ${e.message || 'Could not read customer data.'}`, 'err');
   }
 }
 
