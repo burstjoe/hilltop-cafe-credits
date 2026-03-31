@@ -782,6 +782,8 @@ window.verifyOTP = async () => {
 window.doSignOut = async () => {
   vendorPreview = false;
   currentUser   = null;
+  // Clear the reCAPTCHA verifier so it's fresh on next login
+  if (window._rcv) { window._rcv.clear(); window._rcv = null; }
   await signOut(auth);
   $('role-badge').className = 'role-badge';
   $('logo').classList.remove('vendor-mode');
