@@ -731,8 +731,13 @@ window.openCamera = async () => {
     zxingReader.decodeFromVideoDevice(deviceId, 'cam-video', (result, err) => {
       if (result) {
         const uid = result.getText();
+        console.log('ZXing scanned:', uid);
+        setStatus('vendor-status', `Scanned: ${uid.slice(0, 20)}...`, '');
         closeCamera();
         loadCustomer(uid);
+      }
+      if (err && !(err.name === 'NotFoundException')) {
+        console.error('ZXing error:', err);
       }
     });
   } catch (e) {
