@@ -567,12 +567,16 @@ onAuthStateChanged(auth, async user => {
 
 // ── Vendor UI ──
 function showVendorUI() {
+  // Auto-set isVendor flag so Firestore rules pass for this account
+  if (currentUser) {
+    updateDoc(doc(db, 'users', currentUser.uid), { isVendor: true }).catch(() => {});
+  }
   $('role-badge').textContent = 'Vendor';
   $('role-badge').className   = 'role-badge vendor';
   $('logo').classList.add('vendor-mode');
   setStatus('vendor-status', '');
   show('s-vendor');
-  loadDebtList();  // always refresh on vendor home load
+  loadDebtList();
 }
 
 
