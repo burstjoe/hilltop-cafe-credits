@@ -349,7 +349,15 @@
 
   <!-- SCREEN: User dashboard -->
   <div class="screen" id="s-user">
-    <!-- Deduct — top of page -->
+    <!-- Account info row — top of page -->
+    <div class="card card-body" style="gap:12px;flex-direction:row;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3)">Account</div>
+        <div style="font-family:var(--numeric);font-size:15px;font-weight:500;color:var(--ink);margin-top:4px" id="u-phone"></div>
+      </div>
+      <button class="btn btn-ghost" style="width:auto;padding:0 18px;height:40px;font-size:12px" onclick="show('s-balance')">View balance</button>
+    </div>
+    <!-- Deduct -->
     <div class="card card-body" style="gap:16px">
       <div style="font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink2)">Pay with credits</div>
       <div class="field">
@@ -364,14 +372,6 @@
         <span id="user-deduct-btn-txt">Deduct</span>
         <div class="spin" id="user-deduct-spin"></div>
       </button>
-    </div>
-    <!-- Account info row -->
-    <div class="card card-body" style="gap:12px;flex-direction:row;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3)">Account</div>
-        <div style="font-family:var(--numeric);font-size:15px;font-weight:500;color:var(--ink);margin-top:4px" id="u-phone"></div>
-      </div>
-      <button class="btn btn-ghost" style="width:auto;padding:0 18px;height:40px;font-size:12px" onclick="show('s-balance')">View balance</button>
     </div>
     <!-- QR for top-up -->
     <div class="card">
@@ -786,13 +786,16 @@ window.executeVendorTxn = async () => {
     const newBal = (data.balanceCents || 0) + amtCents;
 
     await updateDoc(ref, { balanceCents: newBal });
-    await addDoc(collection(db, 'users', scannedUID, 'transactions'), {
-      type:              'topup',
-      amountCents:       amtCents,
-      balanceAfterCents: newBal,
-      createdAt:         serverTimestamp()
-    });
-    await pruneTransactions(scannedUID);
+    // Transaction record — silent if permissions not yet updated
+    try {
+      await addDoc(collection(db, 'users', scannedUID, 'transactions'), {
+        type:              'topup',
+        amountCents:       amtCents,
+        balanceAfterCents: newBal,
+        createdAt:         serverTimestamp()
+      });
+      await pruneTransactions(scannedUID);
+    } catch (_) {}
 
     $('suc-pip').className      = 'success-pip topup';
     $('suc-pip').textContent    = '↑';
